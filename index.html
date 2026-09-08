@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>X-Ray Classification</title>
+  <style>
+    :root {
+      --ink: #16291e;
+      --paper: #f7f9f5;
+      --line: #ccd7cb;
+      --green: #d1edb6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button,
+    a,
+    label {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .4;
+    }
+
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible {
+      outline: 3px solid #38702f;
+      outline-offset: 5px;
+    }
+
+
+    .rail {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: 78px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0;
+      background: var(--paper);
+      z-index: 2;
+    }
+
+    .monogram {
+      font-family: Georgia, serif;
+      font-size: 36px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .rail-note {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      font-size: 12px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+
+    .rail-index {
+      font-size: 14px;
+    }
+
+    main {
+      margin-left: 78px;
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 4vw;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #467442;
+    }
+
+    .intro {
+      position: relative;
+      padding: 42px 4vw 34px;
+      background: radial-gradient(ellipse at 85% 10%, #b8e697, transparent 60%),
+        linear-gradient(110deg, #e5eedf, #d9e8d9);
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      margin: 0 0 18px;
+    }
+
+    h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: clamp(62px, 7.8vw, 112px);
+      font-weight: 400;
+      line-height: .97;
+      letter-spacing: -.065em;
+      margin: 0 0 24px;
+    }
+
+    h1 em {
+      font-weight: 400;
+    }
+
+    .intro-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 24px;
+    }
+
+    .intro p:last-child {
+      max-width: 460px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .edition {
+      font-size: 12px;
+      letter-spacing: .1em;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(320px, 1fr);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .visual {
+      min-width: 0;
+      padding: 28px;
+      border-right: 1px solid var(--line);
+    }
+
+    .panel-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .viewer {
+      position: relative;
+      min-height: 350px;
+      background: radial-gradient(ellipse at 50% 30%, #304239, #14221c 75%);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .viewer::before {
+      content: '';
+      position: absolute;
+      inset: 19px;
+      border: 1px solid #ffffff22;
+      pointer-events: none;
+    }
+
+    .empty {
+      text-align: center;
+      color: #c7d5c9;
+      padding: 40px;
+    }
+
+    .empty-mark {
+      display: block;
+      font-family: Georgia, serif;
+      font-size: 100px;
+      font-weight: 400;
+      color: #b9d6b1;
+      margin-bottom: 22px;
+    }
+
+    .empty p {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .viewer:has(img:not([hidden])) .empty,
+    .viewer:has(video:not([hidden])) .empty {
+      display: none;
+    }
+
+    .viewer:has(video:not([hidden])) img {
+      display: none;
+    }
+
+    .viewer img,
+    .viewer video {
+      width: 100%;
+      max-height: 480px;
+      object-fit: contain;
+      position: relative;
+      z-index: 1;
+    }
+
+    #status {
+      font-size: 14px;
+      overflow-wrap: anywhere;
+      color: #536252;
+      line-height: 1.5;
+      margin-bottom: 0;
+    }
+
+    .controls {
+      padding: 28px 32px;
+    }
+
+    .step {
+      font-size: 12px;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      margin: 0 0 14px;
+    }
+
+    h2 {
+      font-family: Georgia, serif;
+      font-size: 34px;
+      font-weight: 400;
+      letter-spacing: -.04em;
+      margin: 0 0 12px;
+    }
+
+    .hint {
+      color: #536252;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 20px;
+    }
+
+    .file-control {
+      display: block;
+      width: 100%;
+      font-size: 14px;
+      color: #536252;
+    }
+
+    .file-control::file-selector-button {
+      border: 1px solid var(--ink);
+      border-radius: 50px;
+      padding: 12px 20px;
+      margin-right: 12px;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .camera-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .small-button {
+      border: 1px solid var(--line);
+      border-radius: 50px;
+      background: transparent;
+      padding: 10px 15px;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .small-button:not(:disabled):hover {
+      background: #e4ecdF;
+    }
+
+    #camera-status {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #536252;
+    }
+
+    #camera-status:empty {
+      display: none;
+    }
+
+    .analysis {
+      border-top: 1px solid var(--line);
+      margin-top: 26px;
+      padding-top: 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .analysis h2 {
+      font-size: 30px;
+      margin: 0;
+    }
+
+    .round {
+      flex-shrink: 0;
+      width: 88px;
+      height: 88px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--green);
+      color: var(--ink);
+      font-size: 42px;
+      transition: transform .2s, background .2s;
+    }
+
+    .round:not(:disabled):hover {
+      transform: rotate(-35deg);
+      background: #b5dc96;
+    }
+
+    .result {
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 16px 0 0;
+      margin: 0;
+    }
+
+    .result:empty::before {
+      content: 'Your result will appear here after analysis.';
+      color: #536252;
+      font-size: 14px;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 20px 4vw;
+      font-size: 12px;
+      color: #536252;
+      line-height: 1.6;
+    }
+
+    @media(max-width:800px) {
+      .rail {
+        width: 52px;
+      }
+
+      main {
+        margin-left: 52px;
+      }
+
+      .topline {
+        padding: 18px 22px;
+      }
+
+      .edition {
+        display: none;
+      }
+
+      .intro {
+        padding: 32px 24px;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .visual {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        padding: 22px;
+      }
+
+      .controls {
+        padding: 24px;
+      }
+
+      .viewer {
+        min-height: 280px;
+      }
+
+      footer {
+        flex-direction: column;
+        gap: 6px;
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      * {
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="rail" aria-label="Brand">
+    <a class="monogram" href="#" aria-label="X-ray home">x.</a>
+    <span class="rail-note">A closer look / Image study</span>
+    <span class="rail-index">01</span>
+  </aside>
+  <main>
+    <header class="topline"><span>X-ray / Image study</span><span class="live">Classification</span></header>
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">Chest X-ray classification</p>
+      <h1 id="page-title">A closer <em>look.</em></h1>
+      <div class="intro-bottom">
+        <p>Upload an X-ray or capture a photo.<br>Explore what our model sees.</p><span class="edition">IMAGE → INSIGHT
+          &nbsp; ↘</span>
+      </div>
+    </section>
+    <section class="workspace" aria-label="Image analysis workspace">
+      <div class="visual">
+        <div class="panel-label"><span>01 / Image preview</span><span>JPEG · PNG</span></div>
+        <div class="viewer">
+          <div class="empty"><span class="empty-mark" aria-hidden="true">[ x ]</span>
+            <p>A new perspective starts<br>with an image.</p>
+          </div>
+          <img id="preview" alt="Selected X-ray preview" hidden>
+          <video id="camera" aria-label="Live camera preview" autoplay playsinline muted hidden></video>
+        </div>
+        <p id="status" role="status">No image selected.</p>
+      </div>
+      <div class="controls">
+        <p class="step">02 / Select your image</p>
+        <h2>Your image. Your study.</h2>
+        <p class="hint">Choose a chest X-ray, or photograph an existing X-ray using your camera.</p>
+        <label for="image-input" class="step">Upload an X-ray</label>
+        <input class="file-control" type="file" id="image-input" accept="image/jpeg,image/png">
+        <div class="camera-row">
+          <button class="small-button" id="open-camera" type="button">Open camera ↗</button>
+          <button class="small-button" id="capture-photo" type="button" disabled>Capture photo</button>
+          <button class="small-button" id="stop-camera" type="button" disabled>Stop camera</button>
+        </div>
+        <p id="camera-status" role="status"></p>
+        <div class="analysis">
+          <div>
+            <p class="step">03 / Explore the result</p>
+            <h2>Analyze image</h2>
+          </div><button class="round" id="analyze-button" aria-label="Analyze image" disabled><span
+              aria-hidden="true">⟶</span></button>
+        </div>
+        <p class="result" id="result" role="status"></p>
+      </div>
+    </section>
+    <footer><span>X-ray / An experiment in computer vision</span><span>Model scores are not a medical diagnosis.</span>
+    </footer>
+  </main>
+  <script>
+    const imageInput = document.getElementById("image-input");
+    const preview = document.getElementById("preview");
+    const status = document.getElementById("status");
+    const analyzeButton = document.getElementById("analyze-button");
+    const result = document.getElementById("result");
+    const openCameraButton = document.getElementById("open-camera");
+    const stopCameraButton = document.getElementById("stop-camera");
+    const captureButton = document.getElementById("capture-photo");
+    const camera = document.getElementById("camera");
+    const cameraStatus = document.getElementById("camera-status");
+
+    // Both uploads and camera captures feed the same prediction request.
+    let selectedImage = null;
+    let previewUrl = null;
+    let previewReady = false;
+    let cameraStream = null;
+    let cameraReady = false;
+    let openingCamera = false;
+    let capturing = false;
+    let analyzing = false;
+    let cameraRequest = 0;
+
+    function updateControls() {
+      const busy = analyzing || capturing || openingCamera;
+      imageInput.disabled = busy;
+      analyzeButton.disabled = busy || !selectedImage || !previewReady;
+      openCameraButton.disabled = busy || cameraStream !== null;
+      stopCameraButton.disabled = capturing || !cameraStream;
+      captureButton.disabled = busy || !cameraReady;
+    }
+
+    function selectImage(file, description) {
+      selectedImage = file;
+      previewReady = false;
+      result.textContent = "";
+      preview.hidden = true;
+      preview.removeAttribute("src");
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = file ? URL.createObjectURL(file) : null;
+      if (previewUrl) preview.src = previewUrl;
+      status.textContent = description;
+      updateControls();
+    }
+
+    imageInput.addEventListener("change", () => {
+      const file = imageInput.files[0] ?? null;
+      selectImage(file, file ? `Selected: ${file.name}` : "No image selected.");
+    });
+
+    preview.addEventListener("load", () => {
+      previewReady = true;
+      preview.hidden = false;
+      updateControls();
+    });
+
+    preview.addEventListener("error", () => {
+      previewReady = false;
+      preview.hidden = true;
+      status.textContent = "Could not preview this image. Try a JPEG or PNG.";
+      updateControls();
+    });
+
+    analyzeButton.addEventListener("click", async () => {
+      if (!selectedImage || !previewReady || analyzing || capturing || openingCamera) return;
+      const formData = new FormData();
+      formData.append("file", selectedImage);
+      analyzing = true;
+      updateControls();
+      result.textContent = "Analyzing image…";
+      try {
+        const response = await fetch("/predict", { method: "POST", body: formData });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(typeof data.detail === "string"
+            ? data.detail : "The server could not analyze this image.");
+        }
+        const normal = (data.probabilities.NORMAL * 100).toFixed(1);
+        const pneumonia = (data.probabilities.PNEUMONIA * 100).toFixed(1);
+        result.textContent = `Prediction: ${data.prediction}. ` +
+          `Model scores — NORMAL: ${normal}%, PNEUMONIA: ${pneumonia}%.`;
+      } catch (error) {
+        result.textContent = `Analysis failed: ${error.message}`;
+      } finally {
+        analyzing = false;
+        updateControls();
+      }
+    });
+
+    function stopCamera() {
+      cameraRequest += 1;
+      if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+      cameraReady = false;
+      openingCamera = false;
+      camera.srcObject = null;
+      camera.hidden = true;
+      updateControls();
+    }
+
+    openCameraButton.addEventListener("click", async () => {
+      if (openingCamera || cameraStream || capturing || analyzing) return;
+      openingCamera = true;
+      const request = ++cameraRequest;
+      updateControls();
+      cameraStatus.textContent = "Requesting camera access…";
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Camera access is unavailable in this browser.");
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } }, audio: false,
+        });
+        // Release a late permission response if the page has been left.
+        if (request !== cameraRequest) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        cameraStream = stream;
+        camera.srcObject = stream;
+        camera.hidden = false;
+        await camera.play();
+        if (request !== cameraRequest) return;
+        cameraReady = true;
+        openingCamera = false;
+        updateControls();
+        cameraStatus.textContent = "Camera ready. Position the X-ray in view.";
+      } catch (error) {
+        if (request !== cameraRequest) return;
+        stopCamera();
+        cameraStatus.textContent = `Could not open camera: ${error.name} — ${error.message}`;
+      }
+    });
+
+    captureButton.addEventListener("click", async () => {
+      if (!cameraReady || capturing || analyzing) return;
+      if (!camera.videoWidth || !camera.videoHeight) {
+        cameraStatus.textContent = "Wait for the camera preview, then try again.";
+        return;
+      }
+      capturing = true;
+      updateControls();
+      try {
+        // Copy one full-resolution frame, then encode it as an uploadable PNG.
+        const canvas = document.createElement("canvas");
+        canvas.width = camera.videoWidth;
+        canvas.height = camera.videoHeight;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Could not create the image canvas.");
+        context.drawImage(camera, 0, 0);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+        if (!blob) throw new Error("Could not capture the photo. Try again.");
+        const photo = new File([blob], "camera-xray.png", { type: "image/png" });
+        imageInput.value = "";
+        selectImage(photo, "Selected: captured X-ray photo");
+        stopCamera();
+        cameraStatus.textContent =
+          "Photo captured. Review it, then analyze or reopen the camera to retake.";
+      } catch (error) {
+        cameraStatus.textContent = `Capture failed: ${error.message}`;
+      } finally {
+        capturing = false;
+        updateControls();
+      }
+    });
+
+    stopCameraButton.addEventListener("click", () => {
+      stopCamera();
+      cameraStatus.textContent = "Camera stopped.";
+    });
+
+    window.addEventListener("pagehide", () => {
+      stopCamera();
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    });
+  </script>
+</body>
+
+</html>
