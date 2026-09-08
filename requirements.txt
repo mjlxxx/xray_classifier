@@ -1,0 +1,11 @@
+# Versions used in the local Python 3.12 environment.
+# PyTorch 2.2 requires NumPy 1.x in this setup.
+numpy==1.26.4
+torch==2.2.2
+torchvision==0.17.2
+Pillow==12.3.0
+onnxruntime==1.23.2
+onnx==1.22.0
+fastapi==0.141.1
+uvicorn==0.52.4
+python-multipart==0.0.32
